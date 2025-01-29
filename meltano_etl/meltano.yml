@@ -1,0 +1,134 @@
+version: 1
+default_environment: dev
+project_id: 0c3e0755-13a7-4d38-8786-c6e06355615f
+environments:
+- name: dev
+- name: staging
+- name: prod
+
+plugins:
+  extractors:
+  - name: tap-postgres
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-postgres.git
+    config:
+      host: localhost   
+      port: 5000                
+      user: meuuser                
+      password: minhasenha        
+      database: sourcedb      
+      default_replication_method: FULL_TABLE    
+      filter_schemas: [public]     
+      max_tap_batch_size: 1000     
+      ssl_enable: false             
+    select:
+    - public-categories.*
+    - public-customer_customer_demo.*
+    - public-customer_demographics.*
+    - public-customers.*
+    - public-employee_territories.*
+    - public-employees.*
+    - public-orders.*
+    - public-products.*
+    - public-region.*
+    - public-shippers.*
+    - public-suppliers.*
+    - public-territories.*
+    - public-us_states.*
+  - name: tap-csv
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+    config:
+      files:
+      - entity: order_details
+        path: data/order_details.csv
+        keys: [order_id, product_id]
+        delimiter: ','
+        header: true
+  - name: tap-csv-postgres
+    inherit_from: tap-csv
+    config:
+      files:
+      - entity: categories      
+        path: data/postgres/public-categories.csv
+        keys: [category_id]     
+        delimiter: ','
+        header: true
+      - entity: customers
+        path: data/postgres/public-customers.csv
+        keys: [customer_id]
+        delimiter: ','
+        header: true
+      - entity: employee_territories
+        path: data/postgres/public-employee_territories.csv
+        keys: [employee_id, territory_id]       
+        delimiter: ','
+        header: true
+      - entity: employees
+        path: data/postgres/public-employees.csv
+        keys: [employee_id]
+        delimiter: ','
+        header: true
+      - entity: orders
+        path: data/postgres/public-orders.csv
+        keys: [order_id]
+        delimiter: ','
+        header: true
+      - entity: products
+        path: data/postgres/public-products.csv
+        keys: [product_id]
+        delimiter: ','
+        header: true
+      - entity: region
+        path: data/postgres/public-region.csv
+        keys: [region_id]
+        delimiter: ','
+        header: true
+      - entity: shippers
+        path: data/postgres/public-shippers.csv
+        keys: [shipper_id]
+        delimiter: ','
+        header: true
+      - entity: suppliers
+        path: data/postgres/public-suppliers.csv
+        keys: [supplier_id]
+        delimiter: ','
+        header: true
+      - entity: territories
+        path: data/postgres/public-territories.csv
+        keys: [territory_id]
+        delimiter: ','
+        header: true
+      - entity: us_states
+        path: data/postgres/public-us_states.csv
+        keys: [state_id]     
+        delimiter: ','
+        header: true
+      - entity: order_details
+        path: data/csv/order_details.csv
+        keys: [order_id, product_id]
+        delimiter: ','
+        header: true
+  
+  loaders:
+  - name: target-postgres
+    variant: meltanolabs
+    pip_url: meltanolabs-target-postgres
+    config:
+      host: localhost    
+      port: 5001                  
+      user: meuuser              
+      password: minhasenha         
+      database: targetdb            
+      default_target_schema: public 
+      ssl_enable: false             
+      hard_delete: false            
+  - name: target-csv
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/target-csv.git
+    config:
+      output_path: data/csv
+  - name: target-postgres-csv
+    inherit_from: target-csv
+    config:
+      output_path: data/postgres

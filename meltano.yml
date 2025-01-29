@@ -1,0 +1,164 @@
+  version: 1
+  default_environment: dev
+  project_id: cd935db2-2f4c-4e7a-b8f2-9620619a1afe
+  environments:
+  - name: dev
+  - name: staging
+  - name: prod
+
+  plugins:
+    extractors:
+    - name: tap-postgres
+      variant: meltanolabs
+      pip_url: git+https://github.com/MeltanoLabs/tap-postgres.git
+      config:
+        host: localhost    # Host do Docker
+        port: 5000                    # Porta do container source-postgres
+        user: meuuser                 # Usuário do banco de origem
+        password: minhasenha          # Senha do banco de origem
+        database: sourcepostgre       # Nome do banco de origem
+        default_replication_method: FULL_TABLE    # Método de replicação - Mudar para INCREMENTAL?
+        filter_schemas: [public]      # Filtra apenas o schema public
+        max_tap_batch_size: 1000      # Tamanho do lote para extração
+        ssl_enable: false             # Desabilita SSL para conexão local
+      select:
+      - public-categories.*
+      - public-customer_customer_demo.*
+      - public-customer_demographics.*
+      - public-customers.*
+      - public-employee_territories.*
+      - public-employees.*
+      - public-orders.*
+      - public-products.*
+      - public-region.*
+      - public-shippers.*
+      - public-suppliers.*
+      - public-territories.*
+      - public-us_states.*
+    - name: tap-csv
+      variant: meltanolabs
+      pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+      config:
+        files:
+        - entity: order_details
+          path: data/order_details.csv
+          keys: [order_id, product_id]
+          delimiter: ','
+          header: true
+    - name: tap-csv-postgres
+      inherit_from: tap-csv
+      config:
+        files:
+        - entity: categories      # Nome da tabela no PostgreSQL (sem o 'public-')
+          path: data/postgres/public-categories.csv
+          keys: [category_id]      # Chave primária
+          delimiter: ','
+          header: true
+        - entity: customers
+          path: data/postgres/public-customers.csv
+          keys: [customer_id]
+          delimiter: ','
+          header: true
+        - entity: employee_territories
+          path: data/postgres/public-employee_territories.csv
+          keys: [employee_id, territory_id]        # Chave composta
+          delimiter: ','
+          header: true
+        - entity: employees
+          path: data/postgres/public-employees.csv
+          keys: [employee_id]
+          delimiter: ','
+          header: true
+        - entity: orders
+          path: data/postgres/public-orders.csv
+          keys: [order_id]
+          delimiter: ','
+          header: true
+        - entity: products
+          path: data/postgres/public-products.csv
+          keys: [product_id]
+          delimiter: ','
+          header: true
+        - entity: region
+          path: data/postgres/public-region.csv
+          keys: [region_id]
+          delimiter: ','
+          header: true
+        - entity: shippers
+          path: data/postgres/public-shippers.csv
+          keys: [shipper_id]
+          delimiter: ','
+          header: true
+        - entity: suppliers
+          path: data/postgres/public-suppliers.csv
+          keys: [supplier_id]
+          delimiter: ','
+          header: true
+        - entity: territories
+          path: data/postgres/public-territories.csv
+          keys: [territory_id]
+          delimiter: ','
+          header: true
+        - entity: us_states
+          path: data/postgres/public-us_states.csv
+          keys: [state_id]      # Ajuste conforme o CSV
+          delimiter: ','
+          header: true
+        - entity: order_details
+          path: data/csv/order_details.csv
+          keys: [order_id, product_id]
+          delimiter: ','
+          header: true
+    #- name: tap-csv-csv
+    #  inherit_from: tap-csv
+    #  config:
+    #    files:
+    #    - entity: order_details
+    #      path: data/csv/order_details.csv
+    #      keys: [order_id, product_id]
+    #      delimiter: ','
+    #      header: true
+    #loaders:
+    #- name: target-jsonl
+    #  variant: andyh1203
+    #  pip_url: target-jsonl
+    #  config:
+    #    destination_path: data/postgres/file.jsonl
+    #    do_timestamp_file: true
+    #- name: target-jsonl-csv
+    #  inherit_from: target-jsonl
+    #  config:
+    #    destination_path: data/csv/file.jsonl
+    #    do_timestamp_file: false
+  # LOADER PARA TARGET-POSTGRES
+    loaders:
+    - name: target-postgres
+      variant: meltanolabs
+      pip_url: meltanolabs-target-postgres
+      config:
+        host: localhost    # Host do Docker
+        port: 5001                    # Porta do container target-postgres
+        user: meuuser                 # Usuário do banco de destino
+        password: minhasenha          # Senha do banco de destino
+        database: targetdb            # Nome do banco de destino
+        default_target_schema: public # Schema de destino no banco de destino
+        ssl_enable: false             # Desabilita SSL para conexão local
+        hard_delete: false            # Não permite deleção física dos registros
+    - name: target-csv
+      variant: meltanolabs
+      pip_url: git+https://github.com/MeltanoLabs/target-csv.git
+      config:
+        output_path: data/csv
+    - name: target-postgres-csv
+      inherit_from: target-csv
+      config:
+        output_path: data/postgres
+
+    # orchestrators:
+    # - name: airflow
+    #   variant: apache
+    #   pip_url: apache-airflow==2.1.2 --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.1.2/constraints-${MELTANO__PYTHON_VERSION}.txt
+    # files:
+    # - name: files-airflow
+    #   variant: meltano
+    #   pip_url: git+https://github.com/meltano/files-airflow.git

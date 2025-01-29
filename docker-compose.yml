@@ -1,0 +1,63 @@
+# version: '3'
+
+# services:
+#   db:
+#     image: ankane/pgvector
+#     restart: always
+#     environment:
+#       POSTGRES_PASSWORD: admin123
+#       POSTGRES_USER: admin123
+#     ports:
+#       - 5432:5432
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#       - /etc/localtime:/etc/localtime:ro
+
+#   adminer:
+#     image: adminer
+#     restart: always
+#     ports:
+#       - 8080:8080
+
+#   airflow-webserver:
+#     image: apache/airflow:2.5.1
+#     environment:
+#       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://admin123:admin123@db:5432/postgres
+#       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+#       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+#       - AIRFLOW__WEBSERVER__SECRET_KEY=3911 
+#     ports:
+#       - "8081:8080" 
+#     volumes:
+#       - ./dags:/opt/airflow/dags
+#       - /etc/localtime:/etc/localtime:ro
+#     depends_on:
+#       - db
+#     command: >
+#       bash -c "
+#         airflow db init && 
+#         airflow webserver
+#       "
+
+#   airflow-scheduler:
+#     image: apache/airflow:2.5.1
+#     environment:
+#       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://admin123:admin123@db:5432/postgres
+#       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+#       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+#       - AIRFLOW__WEBSERVER__SECRET_KEY=3911 
+#     volumes:
+#       - ./dags:/opt/airflow/dags 
+#       - /etc/localtime:/etc/localtime:ro
+#     depends_on:
+#       - db
+#     command: >
+#       bash -c "
+#         airflow db init && 
+#         airflow scheduler
+#       "
+
+# volumes:
+#   postgres_data:
+#   meltano_data:
+
